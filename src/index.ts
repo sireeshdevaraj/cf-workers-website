@@ -1,18 +1,39 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { ReqBody } from "./type";
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+        if (request.method === "POST"){
+            const incomingDomain = request.headers.get("Host")
+            if (incomingDomain !== env.allow_cors_domains){
+                return new Response(JSON.stringify({
+                    status : 403,
+                    message: "Failed"
+                }))
+            }
+            let response = new Response(JSON.stringify({
+                status : 200,
+                message: "Success"
+            }));
+            response.headers.set("Access-Control-Allow-Origin",env.allow_cors_domains);
+            const reqBody : ReqBody = await request.json() 
+            const discordBody = {
+                // we will still handle the case to not allow users to send empty messages. this is just for a little bit of safety.
+                // slice this to 2000 characters only
+                content : reqBody?.message.slice(0,2000) || "Someone viewed your profile" // meaning someone did not fill out the survey.But I still need the analytics ;)
+            }
+
+            await fetch(env.discord_webhook_url,{
+                method : "POST",
+                body : JSON.stringify(discordBody),
+                headers :{
+                    "Content-Type":"application/json"
+                },
+            })
+            return response
+    }
+    return new Response(JSON.stringify({
+        status : 400,
+        message : `${request.method}: Method does not exist`
+    }))
 	},
 } satisfies ExportedHandler<Env>;
