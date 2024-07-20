@@ -2,13 +2,17 @@ import { ReqBody } from "./type";
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
-        if (request.method === "POST"){
-            const incomingDomain = request.headers.get("Host")
+        if (request.method === "POST" && request.headers.get("Referer") === "https://kuuhaku.space/"){
+            const incomingDomain = request.headers.get("Origin")
             if (incomingDomain !== env.allow_cors_domains){
                 return new Response(JSON.stringify({
                     status : 403,
                     message: "Failed"
-                }))
+                }),{
+                    headers:{
+                        "Access-Control-Allow-Origin" : env.allow_cors_domains
+                    }
+                })
             }
             let response = new Response(JSON.stringify({
                 status : 200,
@@ -34,6 +38,10 @@ export default {
     return new Response(JSON.stringify({
         status : 400,
         message : `${request.method}: Method does not exist`
-    }))
+    }),{
+        headers:{
+            "Access-Control-Allow-Origin" : env.allow_cors_domains
+        }
+    })
 	},
 } satisfies ExportedHandler<Env>;
