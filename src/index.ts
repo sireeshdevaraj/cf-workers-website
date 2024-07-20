@@ -2,6 +2,9 @@ import { ReqBody } from "./type";
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
+        // This process of allowing unauthenticated users is flawed itself.
+        // For now, I am not adding any additional security.
+        // LATER: add rate limiting and Ip-blocker.
         if (request.method === "POST" && request.headers.get("Referer") === "https://kuuhaku.space/"){
             const incomingDomain = request.headers.get("Origin")
             if (incomingDomain !== env.allow_cors_domains){
